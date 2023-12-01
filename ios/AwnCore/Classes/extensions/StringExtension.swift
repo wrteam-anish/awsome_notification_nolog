@@ -1,5 +1,7 @@
 
-import CommonCrypto
+import var CommonCrypto.CC_MD5_DIGEST_LENGTH
+import func CommonCrypto.CC_MD5
+import typealias CommonCrypto.CC_LONG
 
 extension String {
     

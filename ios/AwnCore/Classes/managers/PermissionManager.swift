@@ -407,7 +407,10 @@ public class PermissionManager {
                             if permissionsRequested.contains(NotificationPermission.CriticalAlert.rawValue) ||
                                 permissionsRequested.contains(NotificationPermission.OverrideDnD.rawValue){
                                 if(settings.criticalAlertSetting == .notSupported){
-                                  
+                                    Logger.e(self.TAG,
+                                        "Critical Alerts are not available for this project. " +
+                                        "You must require Apple special permissions to use it. " +
+                                        "For more informations, please read our official documentation.")
                                     if permissionsRequested.count == 1 {
                                         permissionCompletion(permissionsNeeded)
                                         return
@@ -497,6 +500,7 @@ public class PermissionManager {
         UNUserNotificationCenter.current().requestAuthorization(options: iOSpermissions) { (granted, error) in
 
             if granted {
+                Logger.d("PermissionManager", "Permissions enabled successfully")
 
                 self.refreshReturnedPermissions(
                     permissionsNeeded,
@@ -620,7 +624,7 @@ public class PermissionManager {
         guard let settingsUrl = URL(string: url) else {
             return false
         }
-        
+
         if UIApplication.shared.canOpenURL(settingsUrl) {
             DispatchQueue.main.async {
                 UIApplication.shared.open(settingsUrl)
@@ -630,6 +634,7 @@ public class PermissionManager {
         
         return false
     }
+
     public func handlePermissionResult() {
         fireActivityCompletionHandle()
     }

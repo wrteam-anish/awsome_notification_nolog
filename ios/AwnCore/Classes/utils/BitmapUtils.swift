@@ -108,6 +108,7 @@ open class BitmapUtils : MediaUtils {
                 return UIImage(data: imageData)
                 
             } catch let error {
+                Logger.e("BitmapUtils", error.localizedDescription)
             }
         }
         
@@ -163,6 +164,7 @@ open class BitmapUtils : MediaUtils {
             }
             
         } catch let error {
+            Logger.e("BitmapUtils", error.localizedDescription)
         }
         
         return nil

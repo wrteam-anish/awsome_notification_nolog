@@ -7,9 +7,9 @@
 
 import Foundation
 
-public class DefaultsManager {
+class DefaultsManager {
     
-    let TAG = "DefaultsManager"
+    static let TAG = "DefaultsManager"
     let userDefaults:UserDefaults = UserDefaults(suiteName: Definitions.USER_DEFAULT_TAG)!
     
     // ************** SINGLETON PATTERN ***********************
@@ -23,10 +23,6 @@ public class DefaultsManager {
         }
     }
     private init(){}
-    
-    public func setDefaultGroupTest() {
-        userDefaults.setValue("pass", forKey: Definitions.TEST_APP_GROUP)
-    }
     
     // ********************************************************
     
@@ -59,10 +55,14 @@ public class DefaultsManager {
         get {
             let dateText:String? = userDefaults.object(forKey: Definitions.AWESOME_LAST_DISPLAYED_DATE) as? String
             
+            Logger.d(DefaultsManager.TAG, "Awesome Notifications - UTC timezone : \(RealDateTime.utcTimeZone)")
+            Logger.d(DefaultsManager.TAG, "Awesome Notifications - Local timezone : \(DateUtils.shared.localTimeZone)")
+            
             guard let dateText:String = dateText else {
                 return RealDateTime.init(fromTimeZone: RealDateTime.utcTimeZone)
             }
             
+            Logger.d(DefaultsManager.TAG, "Awesome Notifications - last displayed date : \(dateText)")
             
             guard let lastDate:RealDateTime =
                                     RealDateTime.init(
@@ -80,11 +80,5 @@ public class DefaultsManager {
     
     public func registerLastDisplayedDate(){
         self.lastDisplayedDate = RealDateTime.init(fromTimeZone: RealDateTime.utcTimeZone)
-    }
-    
-    public func checkIfAppGroupConnected() {
-        let valueRestored:String? = userDefaults.object(forKey: Definitions.TEST_APP_GROUP) as? String
-        if valueRestored?.isEmpty ?? true {
-        }
     }
 }

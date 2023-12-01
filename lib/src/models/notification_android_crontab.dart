@@ -44,16 +44,11 @@ class NotificationAndroidCrontab extends NotificationSchedule {
       String? timeZone,
       bool allowWhileIdle = false,
       bool repeats = false,
-      bool preciseAlarm = true})
-      : _initialDateTime = AwesomeAssertUtils.getValueOrDefault<DateTime>(
-            NOTIFICATION_INITIAL_DATE_TIME, initialDateTime),
-        _expirationDateTime = AwesomeAssertUtils.getValueOrDefault<DateTime>(
-            NOTIFICATION_EXPIRATION_DATE_TIME, expirationDateTime),
-        _preciseSchedules =
-            AwesomeAssertUtils.getValueOrDefault<List<DateTime>>(
-                NOTIFICATION_PRECISE_SCHEDULES, preciseSchedules),
-        _crontabExpression = AwesomeAssertUtils.getValueOrDefault<String>(
-            NOTIFICATION_CRONTAB_EXPRESSION, crontabExpression),
+      bool preciseAlarm = false})
+      : _initialDateTime = initialDateTime,
+        _expirationDateTime = expirationDateTime,
+        _preciseSchedules = preciseSchedules,
+        _crontabExpression = crontabExpression,
         super(
             timeZone: timeZone ?? AwesomeNotifications.localTimeZoneIdentifier,
             allowWhileIdle: allowWhileIdle,
@@ -111,7 +106,7 @@ class NotificationAndroidCrontab extends NotificationSchedule {
             allowWhileIdle: allowWhileIdle,
             repeats: false) {
     _crontabExpression =
-        CronHelper().weekly(referenceDateTime: referenceDateTime);
+        CronHelper().monthly(referenceDateTime: referenceDateTime);
   }
 
   /// Generates a Cron expression to be played only once at day based on a date reference
@@ -124,7 +119,7 @@ class NotificationAndroidCrontab extends NotificationSchedule {
             allowWhileIdle: allowWhileIdle,
             repeats: false) {
     _crontabExpression =
-        CronHelper().daily(referenceDateTime: referenceDateTime);
+        CronHelper().monthly(referenceDateTime: referenceDateTime);
   }
 
   /// Generates a Cron expression to be played only once at hour based on a date reference
@@ -137,7 +132,7 @@ class NotificationAndroidCrontab extends NotificationSchedule {
             allowWhileIdle: allowWhileIdle,
             repeats: false) {
     _crontabExpression =
-        CronHelper().hourly(referenceDateTime: referenceDateTime);
+        CronHelper().monthly(referenceDateTime: referenceDateTime);
   }
 
   /// Generates a Cron expression to be played only once at every minute based on a date reference
@@ -163,7 +158,7 @@ class NotificationAndroidCrontab extends NotificationSchedule {
             allowWhileIdle: allowWhileIdle,
             repeats: false) {
     _crontabExpression =
-        CronHelper().workweekDay(referenceDateTime: referenceDateTime);
+        CronHelper().monthly(referenceDateTime: referenceDateTime);
   }
 
   /// Generates a Cron expression to be played only on weekend days based on a date reference
@@ -176,19 +171,19 @@ class NotificationAndroidCrontab extends NotificationSchedule {
             allowWhileIdle: allowWhileIdle,
             repeats: false) {
     _crontabExpression =
-        CronHelper().weekendDay(referenceDateTime: referenceDateTime);
+        CronHelper().monthly(referenceDateTime: referenceDateTime);
   }
 
   @override
   NotificationAndroidCrontab? fromMap(Map<String, dynamic> mapData) {
     super.fromMap(mapData);
 
-    _crontabExpression = AwesomeAssertUtils.extractValue<String>(
-        NOTIFICATION_CRONTAB_EXPRESSION, mapData);
-    _initialDateTime = AwesomeAssertUtils.extractValue<DateTime>(
-        NOTIFICATION_INITIAL_DATE_TIME, mapData);
-    _expirationDateTime = AwesomeAssertUtils.extractValue<DateTime>(
-        NOTIFICATION_EXPIRATION_DATE_TIME, mapData);
+    _crontabExpression = AwesomeAssertUtils.extractValue(
+        NOTIFICATION_CRONTAB_EXPRESSION, mapData, DateTime);
+    _initialDateTime = AwesomeAssertUtils.extractValue(
+        NOTIFICATION_INITIAL_DATE_TIME, mapData, DateTime);
+    _expirationDateTime = AwesomeAssertUtils.extractValue(
+        NOTIFICATION_EXPIRATION_DATE_TIME, mapData, DateTime);
 
     if (mapData[NOTIFICATION_PRECISE_SCHEDULES] is List) {
       List<String> schedules =
@@ -202,7 +197,13 @@ class NotificationAndroidCrontab extends NotificationSchedule {
         }
       }
     }
-    validate();
+
+    try {
+      validate();
+    } catch (e) {
+      return null;
+    }
+
     return this;
   }
 

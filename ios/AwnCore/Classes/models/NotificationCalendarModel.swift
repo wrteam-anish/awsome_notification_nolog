@@ -215,6 +215,7 @@ public class NotificationCalendarModel : NotificationScheduleModel {
             return trigger
             
         } catch {
+            Logger.e("NotificationCallendarModel", error.localizedDescription)
         }
         return nil
     }

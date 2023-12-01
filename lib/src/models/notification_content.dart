@@ -72,8 +72,6 @@ class NotificationContent extends BaseNotificationContent {
       bool roundedBigPicture = false,
       bool autoDismissible = true,
       Color? color,
-      Duration? timeoutAfter,
-      Duration? chronometer,
       Color? backgroundColor,
       ActionType actionType = ActionType.Default,
       NotificationLayout notificationLayout = NotificationLayout.Default,
@@ -108,8 +106,6 @@ class NotificationContent extends BaseNotificationContent {
             showWhen: showWhen,
             payload: payload,
             icon: icon,
-            timeoutAfter: timeoutAfter,
-            chronometer: chronometer,
             largeIcon: largeIcon,
             bigPicture: bigPicture,
             customSound: customSound,
@@ -123,25 +119,24 @@ class NotificationContent extends BaseNotificationContent {
   @override
   NotificationContent? fromMap(Map<String, dynamic> mapData) {
     super.fromMap(mapData);
-    _hideLargeIconOnExpand = AwesomeAssertUtils.extractValue<bool>(
-        NOTIFICATION_HIDE_LARGE_ICON_ON_EXPAND, mapData);
+    _hideLargeIconOnExpand = AwesomeAssertUtils.extractValue(
+        NOTIFICATION_HIDE_LARGE_ICON_ON_EXPAND, mapData, bool);
 
     _progress =
-        AwesomeAssertUtils.extractValue<int>(NOTIFICATION_PROGRESS, mapData);
-    _badge = AwesomeAssertUtils.extractValue<int>(NOTIFICATION_BADGE, mapData);
+        AwesomeAssertUtils.extractValue(NOTIFICATION_PROGRESS, mapData, int);
+    _badge = AwesomeAssertUtils.extractValue(NOTIFICATION_BADGE, mapData, int);
     _ticker =
-        AwesomeAssertUtils.extractValue<String>(NOTIFICATION_TICKER, mapData);
+        AwesomeAssertUtils.extractValue(NOTIFICATION_TICKER, mapData, String);
     _locked =
-        AwesomeAssertUtils.extractValue<bool>(NOTIFICATION_LOCKED, mapData);
+        AwesomeAssertUtils.extractValue(NOTIFICATION_LOCKED, mapData, bool);
 
     _notificationLayout = AwesomeAssertUtils.extractEnum<NotificationLayout>(
         NOTIFICATION_LAYOUT, mapData, NotificationLayout.values);
 
-    _displayOnForeground = AwesomeAssertUtils.extractValue<bool>(
-        NOTIFICATION_DISPLAY_ON_FOREGROUND, mapData);
-
-    _displayOnBackground = AwesomeAssertUtils.extractValue<bool>(
-        NOTIFICATION_DISPLAY_ON_BACKGROUND, mapData);
+    _displayOnForeground = AwesomeAssertUtils.extractValue(
+        NOTIFICATION_DISPLAY_ON_FOREGROUND, mapData, bool);
+    _displayOnBackground = AwesomeAssertUtils.extractValue(
+        NOTIFICATION_DISPLAY_ON_BACKGROUND, mapData, bool);
 
     try {
       validate();

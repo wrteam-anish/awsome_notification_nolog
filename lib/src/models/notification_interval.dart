@@ -15,7 +15,7 @@ class NotificationInterval extends NotificationSchedule {
       String? timeZone,
       bool allowWhileIdle = false,
       bool repeats = false,
-      bool preciseAlarm = true})
+      bool preciseAlarm = false})
       : super(
             timeZone: timeZone ?? AwesomeNotifications.localTimeZoneIdentifier,
             allowWhileIdle: allowWhileIdle,
@@ -26,8 +26,8 @@ class NotificationInterval extends NotificationSchedule {
   NotificationInterval? fromMap(Map<String, dynamic> mapData) {
     super.fromMap(mapData);
 
-    interval = AwesomeAssertUtils.extractValue<int>(
-        NOTIFICATION_SCHEDULE_INTERVAL, mapData);
+    interval = AwesomeAssertUtils.extractValue(
+        NOTIFICATION_SCHEDULE_INTERVAL, mapData, String);
 
     try {
       validate();

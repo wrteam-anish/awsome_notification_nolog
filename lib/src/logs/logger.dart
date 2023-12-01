@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 // ignore_for_file: avoid_print
-abstract class Logger {
+class Logger {
+  Logger._internal();
+
   static RegExp stackTraceRegex = RegExp(r'#2\s+.*:(\d+):\d+\)');
   static String _getLastLine() {
     String stack = StackTrace.current.toString();

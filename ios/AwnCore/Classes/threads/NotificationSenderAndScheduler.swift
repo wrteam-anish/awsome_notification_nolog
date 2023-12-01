@@ -211,35 +211,71 @@ public class NotificationSenderAndScheduler {
         receivedNotification:NotificationReceived?,
         completion: @escaping (Bool, UNMutableNotificationContent?, Error?) -> ()
     ){
-        defer { printElapsedTime(scheduled: false) }
-        
-        guard let receivedNotification = receivedNotification else {
-            completion(false, nil, nil)
+        if refreshNotification {
+            completion(true, content, nil)
             return
         }
         
-        defer {
-            completion(true, content, nil)
-        }
-        
-        if refreshNotification { return }
+        // Only broadcast if notificationModel is valid
+        if(receivedNotification != nil){
 
-        if(created){
-            CreatedManager
-                .saveCreated(
-                    received: receivedNotification)
-        }
-        
-        if scheduled == nil {
-            DisplayedManager
-                .saveDisplayed(
-                    received: receivedNotification)
+            if(created){
+                BroadcastSender
+                    .shared
+                    .sendBroadcast(
+                        notificationCreated: receivedNotification!,
+                        whenFinished: { [self] (created:Bool) in
+                            
+                            if created && scheduled == nil && receivedNotification?.id != nil {
+                                removePastSchedule(withId:receivedNotification!.id!)
+                            }
+                            
+                            if scheduled == nil {
+                                printElapsedTime(scheduled: false)
+                                BroadcastSender
+                                    .shared
+                                    .sendBroadcast(
+                                        notificationDisplayed: receivedNotification!,
+                                        whenFinished: { [self] (created:Bool) in
+                                            completion(true, content, nil)
+                                        })
+                            }
+                            else {
+                                printElapsedTime(scheduled: true)
+                                DisplayedManager
+                                    .saveScheduledToDisplay(
+                                        received: receivedNotification!)
+                                completion(true, content, nil)
+                            }
+                        })
+            }
+            else {
+                
+                if created && scheduled == nil && receivedNotification?.id != nil {
+                    removePastSchedule(withId:receivedNotification!.id!)
+                }
+                
+                if scheduled == nil {
+                    printElapsedTime(scheduled: false)
+                    BroadcastSender
+                        .shared
+                        .sendBroadcast(
+                            notificationDisplayed: receivedNotification!,
+                            whenFinished: { [self] (created:Bool) in
+                                completion(true, content, nil)
+                            })
+                }
+                else {
+                    printElapsedTime(scheduled: true)
+                    DisplayedManager
+                        .saveScheduledToDisplay(
+                            received: receivedNotification!)
+                    completion(true, content, nil)
+                }
+            }
         }
         else {
-            printElapsedTime(scheduled: true)
-            DisplayedManager
-                .saveScheduledToDisplay(
-                    received: receivedNotification)
+            completion(false, nil, nil)
         }
     }
     
@@ -257,7 +293,9 @@ public class NotificationSenderAndScheduler {
         let endTime = DispatchTime.now()
         let nanoTime = endTime.uptimeNanoseconds - startTime.uptimeNanoseconds
         let timeInterval:Double = Double(nanoTime) / 1_000_000
-   
+        Logger.d(
+            BackgroundService.TAG,
+            "Notification \(scheduled ? "scheduled" : "displayed") in \(timeInterval.rounded())ms")
     }
 
     /// AsyncTask METHODS END *********************************

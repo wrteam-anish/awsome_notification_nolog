@@ -67,10 +67,12 @@ public class NotificationButtonModel : AbstractModel {
     func _processRetroCompatibility(fromArguments arguments: [String : Any?]?){
         
         if arguments?["autoCancel"] != nil {
+            Logger.w(NotificationButtonModel.TAG, "autoCancel is deprecated. Please use autoDismissible instead.")
             autoDismissible = MapUtils<Bool>.getValueOrDefault(reference: "autoCancel", arguments: arguments)
         }
 
         if arguments?["buttonType"] != nil {
+            Logger.w(NotificationButtonModel.TAG, "buttonType is deprecated. Please use actionType instead.")            
             actionType = EnumUtils<ActionType>.getEnumOrDefault(reference: "buttonType", arguments: arguments)
         }
         
@@ -79,7 +81,8 @@ public class NotificationButtonModel : AbstractModel {
     
     func _adaptInputFieldToRequireText(){
         if actionType == ActionType.InputField {
-           
+            Logger.d(NotificationButtonModel.TAG,
+                  "InputField is deprecated. Please use requireInputText instead.")
             requireInputText = true
             actionType = ActionType.SilentAction
         }

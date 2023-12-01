@@ -198,7 +198,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage> {
 
     isLighten =
         // ignore: deprecated_member_use
-        isLighten ?? themeData.brightness == Brightness.light;
+        isLighten ?? themeData.accentColorBrightness == Brightness.light;
     mainColor = mainColor ?? themeData.backgroundColor;
     contrastColor = contrastColor ?? (isLighten! ? Colors.black : Colors.white);
 
@@ -211,7 +211,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage> {
         data: Theme.of(context).copyWith(
             primaryColor: mainColor,
             // ignore: deprecated_member_use
-            secondaryHeaderColor: contrastColor,
+            accentColor: contrastColor,
             scaffoldBackgroundColor: mainColor,
             disabledColor: contrastColor?.withOpacity(0.25),
             textTheme: Theme.of(context)

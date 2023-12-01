@@ -20,7 +20,8 @@ public class AwesomeNotificationsFlutterExtension extends AwesomeNotificationsEx
 
         AwesomeNotifications.awesomeExtensions = new AwesomeNotificationsFlutterExtension();
 
-    
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, "Flutter extensions attached to Awesome Notification's core.");
     }
 
     @Override

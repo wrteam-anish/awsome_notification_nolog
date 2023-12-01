@@ -14,7 +14,6 @@ public class NotificationModel : AbstractModel {
     public var content:NotificationContentModel?
     public var actionButtons:[NotificationButtonModel]?
     public var schedule:NotificationScheduleModel?
-    public var localizations: [String:NotificationLocalizationModel]?
     public var importance:NotificationImportance?
     
     public var nextValidDate:RealDateTime?
@@ -30,12 +29,12 @@ public class NotificationModel : AbstractModel {
             
             self.schedule = try extractNotificationSchedule(Definitions.NOTIFICATION_MODEL_SCHEDULE, arguments)
             self.actionButtons = extractNotificationButtons(Definitions.NOTIFICATION_MODEL_BUTTONS, arguments)
-            self.localizations = extractLocalizations(Definitions.NOTIFICATION_MODEL_LOCALIZATIONS, arguments)
             
             return self
         
         }
         catch {
+            Logger.e("NotificationModel", error.localizedDescription)
         }
             
         return nil
@@ -44,21 +43,16 @@ public class NotificationModel : AbstractModel {
     public func toMap() -> [String : Any?] {
         var mapData:[String: Any?] = [:]
         
-        mapData[Definitions.NOTIFICATION_MODEL_CONTENT] = self.content!.toMap()
-        if(self.schedule != nil){
-            mapData[Definitions.NOTIFICATION_MODEL_SCHEDULE] = self.schedule!.toMap()
-        }
-        
-        if let actionButtons = self.actionButtons {
-            let listButtons = actionButtons.compactMap { $0.toMap() }
-            mapData[Definitions.NOTIFICATION_MODEL_BUTTONS] = listButtons
-        }
-        
-        if let localizations = self.localizations {
-            let localizationsData = Dictionary(uniqueKeysWithValues: localizations.map { key, value in
-                (key, value.toMap())
-            })
-            mapData[Definitions.NOTIFICATION_MODEL_LOCALIZATIONS] = localizationsData
+        mapData["content"] = self.content!.toMap()
+        if(self.schedule != nil){ mapData["schedule"] = self.schedule!.toMap() }
+        if(self.actionButtons != nil){
+            var listButtons:[[String:Any?]] = []
+            
+            for button in self.actionButtons! {
+                listButtons.append(button.toMap())
+            }
+            
+            mapData["actionButtons"] = listButtons
         }
         
         return mapData
@@ -110,24 +104,6 @@ public class NotificationModel : AbstractModel {
         }
         
         return actionButtons
-    }
-    
-    func extractLocalizations(_ reference:String, _ arguments:[String:Any?]?) -> [String:NotificationLocalizationModel]? {
-        guard let localizationsData:[String:[String:Any?]] = arguments?[reference] as? [String:[String:Any?]] else { return nil }
-        if(localizationsData.isEmpty){ return nil }
-        
-        var localizations:[String:NotificationLocalizationModel] = [:]
-        
-        for (languageCode, localizationData) in localizationsData {
-            let localizationModel = NotificationLocalizationModel()
-                .fromMap(arguments: localizationData) as? NotificationLocalizationModel
-            
-            if(localizationModel == nil){ return nil }
-            localizations[languageCode] = localizationModel
-        }
-        
-        return localizations
-        
     }
     
     public func validate() throws {

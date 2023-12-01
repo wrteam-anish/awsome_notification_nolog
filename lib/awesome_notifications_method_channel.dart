@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import 'awesome_notifications.dart';
 import 'awesome_notifications_platform_interface.dart';
+
 import 'src/isolates/isolate_main.dart';
 import 'src/logs/logger.dart';
 
@@ -16,7 +17,7 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
 
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  var methodChannel = const MethodChannel('awesome_notifications');
+  final methodChannel = const MethodChannel('awesome_notifications');
 
   ActionHandler? actionHandler;
   ActionHandler? dismissedHandler;
@@ -25,7 +26,7 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
 
   @override
   Future<void> cancel(int id) async {
-    validateId(id);
+    _validateId(id);
     await methodChannel.invokeMethod(CHANNEL_METHOD_CANCEL_NOTIFICATION, id);
   }
 
@@ -53,7 +54,7 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
 
   @override
   Future<void> cancelSchedule(int id) async {
-    validateId(id);
+    _validateId(id);
     await methodChannel.invokeMethod(CHANNEL_METHOD_CANCEL_SCHEDULE, id);
   }
 
@@ -91,21 +92,18 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
   }
 
   @override
-  Future<bool> createNotification({
-    required NotificationContent content,
-    NotificationSchedule? schedule,
-    List<NotificationActionButton>? actionButtons,
-    Map<String, NotificationLocalization>? localizations,
-  }) async {
-    validateId(content.id!);
+  Future<bool> createNotification(
+      {required NotificationContent content,
+      NotificationSchedule? schedule,
+      List<NotificationActionButton>? actionButtons}) async {
+    _validateId(content.id!);
 
     final bool wasCreated = await methodChannel.invokeMethod(
         CHANNEL_METHOD_CREATE_NOTIFICATION,
         NotificationModel(
                 content: content,
                 schedule: schedule,
-                actionButtons: actionButtons,
-                localizations: localizations)
+                actionButtons: actionButtons)
             .toMap());
 
     return wasCreated;
@@ -128,11 +126,6 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
       if (mapData[NOTIFICATION_BUTTONS] is String) {
         mapData[NOTIFICATION_BUTTONS] =
             json.decode(mapData[NOTIFICATION_BUTTONS]);
-      }
-
-      if (mapData[NOTIFICATION_LOCALIZATIONS] is String) {
-        mapData[NOTIFICATION_LOCALIZATIONS] =
-            json.decode(mapData[NOTIFICATION_LOCALIZATIONS]);
       }
 
       // Invalid Notification
@@ -160,7 +153,7 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
 
   @override
   Future<void> dismiss(int id) async {
-    validateId(id);
+    _validateId(id);
     await methodChannel.invokeMethod(CHANNEL_METHOD_DISMISS_NOTIFICATION, id);
   }
 
@@ -259,15 +252,12 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
 
   @override
   Future<bool> initialize(
-    String? defaultIcon,
-    List<NotificationChannel> channels, {
-    List<NotificationChannelGroup>? channelGroups,
-    bool debug = false,
-    String? languageCode,
-  }) async {
+      String? defaultIcon, List<NotificationChannel> channels,
+      {List<NotificationChannelGroup>? channelGroups,
+      bool debug = false}) async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    methodChannel.setMethodCallHandler(handleMethod);
+    methodChannel.setMethodCallHandler(_handleMethod);
 
     List<dynamic> serializedChannels = [];
     for (NotificationChannel channel in channels) {
@@ -285,7 +275,7 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
     if (kIsWeb) {
       // For web release
     } else {
-      if (!AwesomeAssertUtils.isNullOrEmptyOrInvalid(defaultIcon)) {
+      if (!AwesomeAssertUtils.isNullOrEmptyOrInvalid(defaultIcon, String)) {
         // To set a icon on top of notification, is mandatory to user a native resource
         assert(AwesomeBitmapUtils().getMediaSource(defaultIcon!) ==
             MediaSource.Resource);
@@ -304,13 +294,8 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
       BACKGROUND_HANDLE: dartCallbackReference!.toRawHandle()
     });
 
-    if (languageCode != null) {
-      await setLocalization(languageCode: languageCode);
-    }
-
     AwesomeNotifications.localTimeZoneIdentifier = await methodChannel
         .invokeMethod(CHANNEL_METHOD_GET_LOCAL_TIMEZONE_IDENTIFIER);
-
     AwesomeNotifications.utcTimeZoneIdentifier = await methodChannel
         .invokeMethod(CHANNEL_METHOD_GET_UTC_TIMEZONE_IDENTIFIER);
 
@@ -332,11 +317,13 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
     if (returned != null) {
       for (Object object in returned) {
         if (object is Map) {
-          NotificationModel? notificationModel =
-              NotificationModel().fromMap(Map<String, dynamic>.from(object));
-          if (notificationModel == null) continue;
-
-          scheduledNotifications.add(notificationModel);
+          try {
+            NotificationModel notificationModel =
+                NotificationModel().fromMap(Map<String, dynamic>.from(object))!;
+            scheduledNotifications.add(notificationModel);
+          } catch (e) {
+            return [];
+          }
         }
       }
     }
@@ -378,7 +365,7 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
 
   @override
   Future<void> resetGlobalBadge() async {
-    await methodChannel.invokeMethod(CHANNEL_METHOD_RESET_BADGE);
+    await methodChannel.invokeListMethod(CHANNEL_METHOD_RESET_BADGE);
   }
 
   @override
@@ -411,30 +398,13 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
     createdHandler = onNotificationCreatedMethod;
     displayedHandler = onNotificationDisplayedMethod;
 
-    final CallbackHandle? createdCallbackReference =
-        onNotificationCreatedMethod != null
-            ? PluginUtilities.getCallbackHandle(onNotificationCreatedMethod)
-            : null;
-
-    final CallbackHandle? displayedCallbackReference =
-        onNotificationDisplayedMethod != null
-            ? PluginUtilities.getCallbackHandle(onNotificationDisplayedMethod)
-            : null;
-
     final CallbackHandle? actionCallbackReference =
         PluginUtilities.getCallbackHandle(onActionReceivedMethod);
 
-    final CallbackHandle? dismissedCallbackReference =
-        onDismissActionReceivedMethod != null
-            ? PluginUtilities.getCallbackHandle(onDismissActionReceivedMethod)
-            : null;
-
     bool result =
-        await methodChannel.invokeMethod(CHANNEL_METHOD_SET_EVENT_HANDLES, {
-      CREATED_HANDLE: createdCallbackReference?.toRawHandle(),
-      DISPLAYED_HANDLE: displayedCallbackReference?.toRawHandle(),
+        await methodChannel.invokeMethod(CHANNEL_METHOD_SET_ACTION_HANDLE, {
       ACTION_HANDLE: actionCallbackReference?.toRawHandle(),
-      DISMISSED_HANDLE: dismissedCallbackReference?.toRawHandle()
+      RECOVER_DISPLAYED: displayedHandler != null
     });
 
     if (!result) {
@@ -483,37 +453,10 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
         CHANNEL_METHOD_SHOW_NOTIFICATION_PAGE, channelKey);
   }
 
-  @override
-  Future<String> getLocalization() async {
-    return await methodChannel.invokeMethod(CHANNEL_METHOD_GET_LOCALIZATION);
-  }
-
-  @override
-  Future<bool> setLocalization({required String? languageCode}) async {
-    var success = await methodChannel.invokeMethod(
-        CHANNEL_METHOD_SET_LOCALIZATION, languageCode);
-    return success;
-  }
-
-  @override
-  Future<bool> isNotificationActiveOnStatusBar({required int id}) async {
-    var success = await methodChannel.invokeMethod(
-        CHANNEL_METHOD_IS_NOTIFICATION_ACTIVE, id);
-    return success;
-  }
-
-  @override
-  Future<List<int>> getAllActiveNotificationIdsOnStatusBar() async {
-    return await methodChannel
-            .invokeMethod(CHANNEL_METHOD_GET_ALL_ACTIVE_NOTIFICATION_IDS) ??
-        [];
-  }
-
   final String _silentBGActionTypeKey =
       AwesomeAssertUtils.toSimpleEnumString(ActionType.SilentBackgroundAction)!;
 
-  @visibleForTesting
-  Future<dynamic> handleMethod(MethodCall call) async {
+  Future<dynamic> _handleMethod(MethodCall call) async {
     Map<String, dynamic> arguments =
         (call.arguments as Map).cast<String, dynamic>();
 
@@ -540,9 +483,9 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
 
       case EVENT_SILENT_ACTION:
         if (arguments[NOTIFICATION_ACTION_TYPE] == _silentBGActionTypeKey) {
-          await compute(IsolateController().receiveSilentAction, arguments);
+          compute(receiveSilentAction, arguments);
         } else {
-          await IsolateController().receiveSilentAction(arguments);
+          receiveSilentAction(arguments);
         }
         return;
 
@@ -551,8 +494,7 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
     }
   }
 
-  @visibleForTesting
-  void validateId(int id) {
+  void _validateId(int id) {
     if (id > 0x7FFFFFFF || id < -0x80000000) {
       throw ArgumentError(
           'The id field must be the limited to 32-bit size integer');
@@ -583,5 +525,8 @@ class MethodChannelAwesomeNotifications extends AwesomeNotificationsPlatform {
   }
 
   @override
-  dispose() {}
+  dispose() {
+    // TODO: implement dispose
+    throw UnimplementedError();
+  }
 }

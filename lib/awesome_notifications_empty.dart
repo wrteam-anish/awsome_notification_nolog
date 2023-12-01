@@ -45,12 +45,10 @@ class AwesomeNotificationsEmpty extends AwesomeNotificationsPlatform
   }
 
   @override
-  Future<bool> createNotification({
-    required NotificationContent content,
-    NotificationSchedule? schedule,
-    List<NotificationActionButton>? actionButtons,
-    Map<String, NotificationLocalization>? localizations,
-  }) async {
+  Future<bool> createNotification(
+      {required NotificationContent content,
+      NotificationSchedule? schedule,
+      List<NotificationActionButton>? actionButtons}) async {
     return false;
   }
 
@@ -79,7 +77,7 @@ class AwesomeNotificationsEmpty extends AwesomeNotificationsPlatform
 
   @override
   Future<NotificationLifeCycle> getAppLifeCycle() async {
-    return NotificationLifeCycle.Terminated;
+    return NotificationLifeCycle.AppKilled;
   }
 
   @override
@@ -121,12 +119,9 @@ class AwesomeNotificationsEmpty extends AwesomeNotificationsPlatform
 
   @override
   Future<bool> initialize(
-    String? defaultIcon,
-    List<NotificationChannel> channels, {
-    List<NotificationChannelGroup>? channelGroups,
-    bool debug = false,
-    String? languageCode,
-  }) async {
+      String? defaultIcon, List<NotificationChannel> channels,
+      {List<NotificationChannelGroup>? channelGroups,
+      bool debug = false}) async {
     return true;
   }
 
@@ -198,26 +193,6 @@ class AwesomeNotificationsEmpty extends AwesomeNotificationsPlatform
 
   @override
   Future<void> showNotificationConfigPage({String? channelKey}) async {}
-
-  @override
-  Future<String> getLocalization() async {
-    return '';
-  }
-
-  @override
-  Future<bool> setLocalization({required String? languageCode}) async {
-    return false;
-  }
-
-  @override
-  Future<bool> isNotificationActiveOnStatusBar({required int id}) async {
-    return false;
-  }
-
-  @override
-  Future<List<int>> getAllActiveNotificationIdsOnStatusBar() async {
-    return [];
-  }
 
   @override
   dispose() {}

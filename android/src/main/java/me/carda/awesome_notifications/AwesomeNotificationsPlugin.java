@@ -133,7 +133,8 @@ public class AwesomeNotificationsPlugin
                     Definitions.CHANNEL_FLUTTER_PLUGIN
                 ));
 
-        
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, "Awesome Notifications attached to engine for Android " + Build.VERSION.SDK_INT);
     }
 
     @Override
@@ -150,7 +151,8 @@ public class AwesomeNotificationsPlugin
             AwesomeNotificationsFlutterExtension.initialize();
             awesomeNotifications = new AwesomeNotifications(applicationContext);
 
-          
+            if (AwesomeNotifications.debug)
+                Logger.d(TAG, "Awesome Notifications plugin attached to Android " + Build.VERSION.SDK_INT);
 
         } catch (AwesomeNotificationsException ignored) {
         } catch (Exception exception) {
@@ -174,6 +176,8 @@ public class AwesomeNotificationsPlugin
             awesomeNotifications = null;
         }
 
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, "Awesome Notifications plugin detached from Android " + Build.VERSION.SDK_INT);
     }
 
     @Override
@@ -269,8 +273,8 @@ public class AwesomeNotificationsPlugin
                     channelMethodInitialize(call, result);
                     return;
 
-                case Definitions.CHANNEL_METHOD_SET_EVENT_HANDLES:
-                    channelMethodSetEventsHandle(call, result);
+                case Definitions.CHANNEL_METHOD_SET_ACTION_HANDLE:
+                    channelMethodSetActionHandle(call, result);
                     return;
 
                 case Definitions.CHANNEL_METHOD_GET_DRAWABLE_DATA:
@@ -303,14 +307,6 @@ public class AwesomeNotificationsPlugin
 
                 case Definitions.CHANNEL_METHOD_REQUEST_NOTIFICATIONS:
                     channelRequestUserPermissions(call, result);
-                    return;
-
-                case Definitions.CHANNEL_METHOD_IS_NOTIFICATION_ACTIVE:
-                    channelMethodIsNotificationActiveOnStatusBar(call, result);
-                    return;
-
-                case Definitions.CHANNEL_METHOD_GET_ALL_ACTIVE_NOTIFICATION_IDS:
-                    channelMethodGetAllActiveNotificationIdsOnStatusBar(call, result);
                     return;
 
                 case Definitions.CHANNEL_METHOD_CREATE_NOTIFICATION:
@@ -371,14 +367,6 @@ public class AwesomeNotificationsPlugin
 
                 case Definitions.CHANNEL_METHOD_RESET_BADGE:
                     channelMethodResetBadge(call, result);
-                    return;
-
-                case Definitions.CHANNEL_METHOD_SET_LOCALIZATION:
-                    channelMethodSetLocalization(call, result);
-                    return;
-
-                case Definitions.CHANNEL_METHOD_GET_LOCALIZATION:
-                    channelMethodGetLocalization(call, result);
                     return;
 
                 case Definitions.CHANNEL_METHOD_DISMISS_NOTIFICATION:
@@ -622,7 +610,10 @@ public class AwesomeNotificationsPlugin
                 awesomeNotifications
                         .removeChannel(channelKey);
 
-       
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, removed ?
+                    "Channel removed" :
+                    "Channel '" + channelKey + "' not found");
 
         result.success(removed);
     }
@@ -681,23 +672,6 @@ public class AwesomeNotificationsPlugin
         result.success(badgeCount);
     }
 
-    private void channelMethodSetLocalization(
-            @NonNull final MethodCall call,
-            @NonNull final Result result
-    ) throws AwesomeNotificationsException {
-        String languageCode = call.arguments();
-        boolean success = awesomeNotifications.setLocalization(languageCode);
-        result.success(success);
-    }
-
-    private void channelMethodGetLocalization(
-            @NonNull final MethodCall call,
-            @NonNull final Result result
-    ) throws AwesomeNotificationsException {
-        String languageCode = awesomeNotifications.getLocalization();
-        result.success(languageCode);
-    }
-
     private void channelMethodDismissNotification(
             @NonNull final MethodCall call,
             @NonNull final Result result
@@ -715,7 +689,10 @@ public class AwesomeNotificationsPlugin
 
         boolean dismissed = awesomeNotifications.dismissNotification(notificationId);
 
-     
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, dismissed ?
+                    "Notification " + notificationId + " dismissed" :
+                    "Notification " + notificationId + " was not found");
 
         result.success(dismissed);
     }
@@ -737,7 +714,10 @@ public class AwesomeNotificationsPlugin
 
         boolean canceled = awesomeNotifications.cancelSchedule(notificationId);
 
-    
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, canceled ?
+                    "Schedule " + notificationId + " cancelled" :
+                    "Schedule " + notificationId + " was not found");
 
         result.success(canceled);
     }
@@ -759,7 +739,11 @@ public class AwesomeNotificationsPlugin
 
         boolean canceled = awesomeNotifications.cancelNotification(notificationId);
 
-      
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, canceled ?
+                    "Notification " + notificationId + " cancelled" :
+                    "Notification " + notificationId + " was not found");
+
         result.success(canceled);
     }
 
@@ -780,7 +764,11 @@ public class AwesomeNotificationsPlugin
 
         boolean dismissed = awesomeNotifications.dismissNotificationsByChannelKey(channelKey);
 
-        
+        if(AwesomeNotifications.debug)
+            Logger.d(TAG, dismissed ?
+                    "Notifications from channel " + channelKey + " dismissed" :
+                    "Notifications from channel " + channelKey + " not found");
+
         result.success(dismissed);
     }
 
@@ -801,7 +789,10 @@ public class AwesomeNotificationsPlugin
 
         boolean canceled = awesomeNotifications.cancelSchedulesByChannelKey(channelKey);
 
-    
+        if(AwesomeNotifications.debug)
+            Logger.d(TAG, canceled ?
+                    "Scheduled Notifications from channel " + channelKey + " canceled" :
+                    "Scheduled Notifications from channel " + channelKey + " not found");
 
         result.success(canceled);
     }
@@ -823,7 +814,11 @@ public class AwesomeNotificationsPlugin
 
         boolean canceled = awesomeNotifications.cancelNotificationsByChannelKey(channelKey);
 
-       
+        if(AwesomeNotifications.debug)
+            Logger.d(TAG, canceled ?
+                    "Notifications and schedules from channel " + channelKey + " canceled" :
+                    "Notifications and schedules from channel " + channelKey + " not found");
+
         result.success(canceled);
     }
 
@@ -844,7 +839,10 @@ public class AwesomeNotificationsPlugin
 
         boolean dismissed = awesomeNotifications.dismissNotificationsByGroupKey(groupKey);
 
-     
+        if(AwesomeNotifications.debug)
+            Logger.d(TAG, dismissed ?
+                    "Notifications from group " + groupKey + " dismissed" :
+                    "Notifications from group " + groupKey + " not found");
 
         result.success(dismissed);
     }
@@ -866,7 +864,10 @@ public class AwesomeNotificationsPlugin
 
         boolean canceled = awesomeNotifications.cancelSchedulesByGroupKey(groupKey);
 
-     
+        if(AwesomeNotifications.debug)
+            Logger.d(TAG, canceled ?
+                    "Scheduled Notifications from group " + groupKey + " canceled" :
+                    "Scheduled Notifications from group " + groupKey + " not found");
 
         result.success(canceled);
     }
@@ -888,7 +889,11 @@ public class AwesomeNotificationsPlugin
 
         boolean canceled = awesomeNotifications.cancelNotificationsByGroupKey(groupKey);
 
-        
+        if(AwesomeNotifications.debug)
+            Logger.d(TAG, canceled ?
+                    "Notifications and schedules from group " + groupKey + " canceled" :
+                    "Notifications and schedules from group " + groupKey + " not found to be");
+
         result.success(canceled);
     }
 
@@ -899,7 +904,9 @@ public class AwesomeNotificationsPlugin
 
         awesomeNotifications.dismissAllNotifications();
 
-       
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, "All notifications was dismissed");
+
         result.success(true);
     }
 
@@ -910,6 +917,8 @@ public class AwesomeNotificationsPlugin
 
         awesomeNotifications.cancelAllSchedules();
 
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, "All notifications scheduled was cancelled");
 
         result.success(true);
     }
@@ -921,6 +930,8 @@ public class AwesomeNotificationsPlugin
 
         awesomeNotifications.cancelAllNotifications();
 
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, "All notifications was cancelled");
 
         result.success(true);
     }
@@ -1239,30 +1250,6 @@ public class AwesomeNotificationsPlugin
                     });
     }
 
-    private void channelMethodIsNotificationActiveOnStatusBar(
-            @NonNull final MethodCall call,
-            @NonNull final Result result
-    ) throws Exception {
-        Integer id = call.arguments();
-        if(id == null)
-            throw ExceptionFactory
-                    .getInstance()
-                    .createNewAwesomeException(
-                            TAG,
-                            ExceptionCode.CODE_MISSING_ARGUMENTS,
-                            "Id is required",
-                            ExceptionCode.DETAILED_REQUIRED_ARGUMENTS);
-
-        result.success(awesomeNotifications.isNotificationActiveOnStatusBar(id));
-    }
-
-    private void channelMethodGetAllActiveNotificationIdsOnStatusBar(
-            @NonNull final MethodCall call,
-            @NonNull final Result result
-    ) throws Exception {
-        result.success(awesomeNotifications.getAllActiveNotificationIdsOnStatusBar());
-    }
-
     private void channelMethodCreateNotification(
             @NonNull final MethodCall call,
             @NonNull final Result result
@@ -1330,8 +1317,7 @@ public class AwesomeNotificationsPlugin
         debug = debug != null && debug;
 
         Object backgroundCallbackObj = arguments.get(Definitions.BACKGROUND_HANDLE);
-        Long backgroundCallback = backgroundCallbackObj == null
-                ? 0L :((Number) backgroundCallbackObj).longValue();
+        Long backgroundCallback = backgroundCallbackObj == null ? 0L :((Number) backgroundCallbackObj).longValue();
 
         awesomeNotifications.initialize(
                 defaultIconPath,
@@ -1340,12 +1326,14 @@ public class AwesomeNotificationsPlugin
                 backgroundCallback,
                 debug);
 
+        if (AwesomeNotifications.debug)
+            Logger.d(TAG, "Awesome Notifications Flutter plugin initialized");
 
         result.success(true);
     }
 
     @SuppressWarnings("unchecked")
-    private void channelMethodSetEventsHandle(
+    private void channelMethodSetActionHandle(
             @NonNull final MethodCall call,
             @NonNull final Result result
     ) throws Exception {
@@ -1360,29 +1348,19 @@ public class AwesomeNotificationsPlugin
                             "Arguments are missing",
                             ExceptionCode.DETAILED_REQUIRED_ARGUMENTS);
 
-        Object callbackCreatedObj = arguments.get(Definitions.CREATED_HANDLE);
-        Object callbackDisplayedObj = arguments.get(Definitions.DISPLAYED_HANDLE);
         Object callbackActionObj = arguments.get(Definitions.ACTION_HANDLE);
-        Object callbackDismissedObj = arguments.get(Definitions.DISMISSED_HANDLE);
 
-        long createdCallback = callbackCreatedObj == null
-                ? 0L : ((Number) callbackCreatedObj).longValue();
-        long displayedCallback = callbackDisplayedObj == null
-                ? 0L : ((Number) callbackDisplayedObj).longValue();
-        long actionCallback = callbackActionObj == null
-                ? 0L : ((Number) callbackActionObj).longValue();
-        long dismissedCallback = callbackDismissedObj == null
-                ? 0L : ((Number) callbackDismissedObj).longValue();
+        long silentCallback = callbackActionObj == null ? 0L : ((Number) callbackActionObj).longValue();
 
         awesomeNotifications.attachAsMainInstance(awesomeEventListener);
-        awesomeNotifications.setEventsHandle(
-                createdCallback,
-                displayedCallback,
-                actionCallback,
-                dismissedCallback);
+        awesomeNotifications.setActionHandle(silentCallback);
 
-        boolean success = actionCallback != 0L;
-
+        boolean success = silentCallback != 0L;
+        if(!success)
+            Logger.w(
+                    TAG,
+                    "Attention: there is no valid static" +
+                            " method to receive notification actions in background");
 
         result.success(success);
     }

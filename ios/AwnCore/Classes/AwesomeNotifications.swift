@@ -35,9 +35,6 @@ public class AwesomeNotifications:
     
     public static var awesomeExtensions:AwesomeNotificationsExtension?
     public static var backgroundClassType:BackgroundExecutor.Type?
-    public static var didFinishLaunch:Bool = false
-    public static var removeFromEvents:Bool = false
-    public static var completionHandlerGetInitialAction:((ActionReceived?) -> Void)? = nil
     
     // ************************** CONSTRUCTOR ***********************************
         
@@ -54,14 +51,6 @@ public class AwesomeNotifications:
         }
         
         activateiOSNotifications()
-        
-        DefaultsManager
-            .shared
-            .setDefaultGroupTest()
-        
-        BadgeManager
-            .shared
-            .syncBadgeAmount()
     }
     
     static var areDefaultsLoaded = false
@@ -100,6 +89,7 @@ public class AwesomeNotifications:
             .subscribeOnNotificationEvents(listener: self)
             .subscribeOnActionEvents(listener: self)
         
+        Logger.d(TAG, "Awesome notifications \(self.hash) attached to app instance");
     }
     
     public func detachAsMainInstance(listener: AwesomeEventListener){
@@ -116,6 +106,7 @@ public class AwesomeNotifications:
             .unsubscribeOnNotificationEvents(listener: self)
             .unsubscribeOnActionEvents(listener: self)
         
+        Logger.d(TAG, "Awesome notifications \(self.hash) detached from app instance");
     }
     
     public func dispose(){
@@ -186,9 +177,8 @@ public class AwesomeNotifications:
                     if (
                         DefaultsManager
                             .shared
-                            .actionCallback != 0
-                    ){
-                        try recoverLostEvents(
+                            .actionCallback != 0){
+                        try recoverNotificationsDisplayed(
                             withReferenceLifeCycle: .Background
                         )
                     }
@@ -293,7 +283,7 @@ public class AwesomeNotifications:
             return nil
         }
         
-        return image.pngData()
+        return UIImage.pngData(image)()
     }
     
     // ***************************************************************************************
@@ -305,13 +295,13 @@ public class AwesomeNotifications:
             .actionCallback = actionHandle
         
         if actionHandle != 0 {
-            try recoverLostEvents(withReferenceLifeCycle: .AppKilled)
+            try recoverLostEvents()
         }
     }
     
-    public func recoverLostEvents(withReferenceLifeCycle referencedLifeCycle: NotificationLifeCycle) throws {
+    public func recoverLostEvents() throws {
         try recoverNotificationsCreated()
-        try recoverNotificationsDisplayed(withReferenceLifeCycle: referencedLifeCycle)
+        try recoverNotificationsDisplayed(withReferenceLifeCycle: .AppKilled)
         try recoverNotificationsDismissed()
         try recoverNotificationActions()
     }
@@ -404,6 +394,7 @@ public class AwesomeNotifications:
         AwesomeNotifications.debug = debug
         
         if(AwesomeNotifications.debug){
+            Logger.d(TAG, "Awesome Notifications initialized")
         }
     }
     
@@ -425,12 +416,13 @@ public class AwesomeNotifications:
                 notificationReceived: createdNotification)
             
             if !CreatedManager.removeCreated(id: createdNotification.id!) {
+                Logger.e(TAG, "Created event \(createdNotification.id!) could not be cleaned")
             }
         }
     }
     
     private func recoverNotificationsDisplayed(
-        withReferenceLifeCycle referenceLifeCycle:NotificationLifeCycle
+        withReferenceLifeCycle lifeCycle:NotificationLifeCycle
     ) throws {
         
         let lastRecoveredDate:RealDateTime =
@@ -450,7 +442,7 @@ public class AwesomeNotifications:
             
             if(lastRecoveredDate < displayedDate){
                 try displayedNotification.validate()
-                displayedNotification.displayedLifeCycle = referenceLifeCycle
+                displayedNotification.displayedLifeCycle = lifeCycle
                 
                 notifyNotificationEvent(
                     eventName: Definitions.EVENT_NOTIFICATION_DISPLAYED,
@@ -458,6 +450,7 @@ public class AwesomeNotifications:
             }
             
             if !DisplayedManager.removeDisplayed(id: displayedNotification.id!) {
+                Logger.e(TAG, "Displayed event \(displayedNotification.id!) could not be cleaned")
             }
         }
     }
@@ -473,6 +466,7 @@ public class AwesomeNotifications:
                 withActionReceived: dismissedNotification)
             
             if !DismissedManager.removeDismissed(id: dismissedNotification.id!) {
+                Logger.e(TAG, "Dismissed event \(dismissedNotification.id!) could not be cleaned")
             }
         }
     }
@@ -488,31 +482,27 @@ public class AwesomeNotifications:
                 withActionReceived: notificationAction)
             
             if !ActionManager.removeAction(id: notificationAction.id!) {
+                Logger.e(TAG, "Action event \(notificationAction.id!) could not be cleaned")
             }
         }
     }
     
+    
     // *****************************  IOS NOTIFICATION CENTER METHODS  **********************************
+#if !ACTION_EXTENSION
     
     private var _originalNotificationCenterDelegate: UNUserNotificationCenterDelegate?
     
     @objc public func didFinishLaunch(_ application: UIApplication) {
         
         UNUserNotificationCenter.current().delegate = self
+        UIApplication.shared.registerForRemoteNotifications()
         
         RefreshSchedulesReceiver()
                 .refreshSchedules()
         
-        AwesomeNotifications.didFinishLaunch = true
-        if AwesomeNotifications.completionHandlerGetInitialAction != nil {
-            AwesomeNotifications
-                .completionHandlerGetInitialAction!(
-                    ActionManager.getInitialAction(
-                        removeFromEvents: AwesomeNotifications.removeFromEvents))
-        }
-        
-            
         if AwesomeNotifications.debug {
+            Logger.d(TAG, "Awesome Notifications attached for iOS")
         }
     }
     
@@ -522,6 +512,7 @@ public class AwesomeNotifications:
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ){
+        Logger.d(TAG, "Notification Category Identifier (action): \(response.notification.request.content.categoryIdentifier)")
         do {
             switch response.actionIdentifier {
             
@@ -647,7 +638,7 @@ public class AwesomeNotifications:
         }
         
         do {
-            try recoverLostEvents(withReferenceLifeCycle: .Foreground)
+            try recoverLostEvents()
         } catch {
             if !(error is AwesomeNotificationsException) {
                 ExceptionFactory
@@ -689,6 +680,8 @@ public class AwesomeNotifications:
         }
         return jsonMap
     }
+    
+#endif
     
     
     // *****************************  NOTIFICATION METHODS  **********************************
@@ -792,15 +785,6 @@ public class AwesomeNotifications:
                     .decrementGlobalBadgeCounter()
     }
     
-    public func getInitialAction(removeFromEvents:Bool, completionHandler: @escaping (ActionReceived?) -> Void) {
-        if AwesomeNotifications.didFinishLaunch {
-            completionHandler(ActionManager.getInitialAction(removeFromEvents: removeFromEvents))
-            return
-        }
-        AwesomeNotifications.removeFromEvents = removeFromEvents
-        AwesomeNotifications.completionHandlerGetInitialAction = completionHandler
-    }
-    
     // *****************************  CANCELATION METHODS  **********************************
     
     public func dismissNotification(byId id: Int) -> Bool {
@@ -810,6 +794,7 @@ public class AwesomeNotifications:
                     .dismissNotification(byId: id)
         
         if AwesomeNotifications.debug {
+            Logger.d(TAG, "Notification id \(id) dismissed")
         }
         
         return success
@@ -989,18 +974,5 @@ public class AwesomeNotifications:
                 filteringByChannelKey: channelKey,
                 whenUserReturns: completionHandler)
         
-    }
-    
-    public func setLocalization(languageCode:String?) -> Bool {
-        return LocalizationManager
-            .shared
-            .setLocalization(
-                languageCode: languageCode)
-    }
-    
-    public func getLocalization() -> String {
-        return LocalizationManager
-            .shared
-            .getLocalization()
     }
 }
